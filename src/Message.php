@@ -53,8 +53,11 @@ class Message extends ActiveRecord
         try {
             return parent::save($runValidation, $attributeNames);
         } catch (IntegrityException $e) {
-            $this->resolveSaveConflict($e, $runValidation, $attributeNames);
-            throw $e;
+            $result = $this->resolveSaveConflict($e, $runValidation, $attributeNames);
+            if (!$result) {
+                throw $e;
+            }
+            return true;
         }
     }
 

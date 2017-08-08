@@ -28,12 +28,13 @@ class MessageHandler
     static public function addMultiple($userIds, $type, $params = null)
     {
         /** @var Message $message */
-        $message = new (static::getClassMessage());
+        $class = static::getClassMessage();
+        $message = new $class();
         $message->type = $type;
         $message->data = Json::encode($params);
         $message->generateUniqueIdentifier();
 
-        (static::getClassMessage())::deleteAll(
+        $class::deleteAll(
             [
                 'userId' => $userIds,
                 'hash' => $message->uniqueIdentifier,
@@ -65,7 +66,8 @@ class MessageHandler
         }
 
         /** @var Message $message */
-        $message = new (static::getClassMessage());
+        $class = static::getClassMessage();
+        $message = new $class;
         $message->userId = $userId;
         $message->createdAt = time();
         $message->type = $type;
@@ -99,7 +101,8 @@ class MessageHandler
      */
     static public function confirmByMessageId($id, $userId)
     {
-        return (bool)(static::getClassMessage())::deleteAll(
+        $class = static::getClassMessage();
+        return (bool)$class::deleteAll(
             'id = :id AND userId = :userId',
             [
                 ':id' => $id,
@@ -116,12 +119,13 @@ class MessageHandler
     static public function getMessageByUser($userId, $delay)
     {
         /** @var Message $message */
-        $message = (static::getClassMessage())::find()
+        $class = static::getClassMessage();
+        $message = $class::find()
             ->where('userId = :userId', [':userId' => $userId])
             ->one();
 
         if (!$message) {
-            $message = new (static::getClassMessage());
+            $message = new $class;
             $message->type = static::TYPE_NOC;
         }
 
