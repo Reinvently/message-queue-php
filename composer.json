@@ -1,0 +1,34 @@
+{
+  "name": "reinvently/message-queue-php",
+  "description": "",
+  "keywords": [
+    "Reinvently",
+    "yii",
+    "yii2",
+    "yii 2",
+    "extension"
+  ],
+  "homepage": "https://github.com/Reinvently/message-queue-php",
+  "type": "yii2-extension",
+  "license": "Apache-2.0",
+  "authors": [
+    {
+      "name": "Reinvently",
+      "email": "Hello@reinvently.com",
+      "homepage": "http://reinvently.com/",
+      "role": "Developer"
+    }
+  ],
+  "support": {
+    "issues": "https://github.com/Reinvently/message-queue-php/issues",
+    "source": "https://github.com/Reinvently/message-queue-php"
+  },
+  "require": {
+    "yiisoft/yii2": ">=2.0.9"
+  },
+  "autoload": {
+    "psr-4": {
+      "reinvently\\messagequeue\\": "src"
+    }
+  }
+}
