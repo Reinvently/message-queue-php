@@ -25,7 +25,7 @@ class MessageHandler
      * @param array|object|null $params
      * @throws IntegrityException
      */
-    public static function addMultiple($userIds, $type, $params = null)
+    static public function addMultiple($userIds, $type, $params = null)
     {
         /** @var Message $message */
         $message = new (static::getClassMessage());
@@ -45,12 +45,20 @@ class MessageHandler
     }
 
     /**
+     * @return Message
+     */
+    static public function getClassMessage()
+    {
+        return static::$classMessage;
+    }
+
+    /**
      * @param $userId
      * @param $type
      * @param array|object|null $data
      * @return bool
      */
-    public static function add($userId, $type, $data = null)
+    static public function add($userId, $type, $data = null)
     {
         if (empty($userId) || empty($type)) {
             return false;
@@ -73,7 +81,7 @@ class MessageHandler
      * @param integer $messageId
      * @return array
      */
-    public function getApiResponse($userId, $delay, $messageId = 0)
+    static public function getApiResponse($userId, $delay, $messageId = 0)
     {
         if ($messageId) {
             MessageHandler::confirmByMessageId($messageId, $userId);
@@ -89,7 +97,7 @@ class MessageHandler
      * @param integer $userId for secure delete
      * @return bool
      */
-    public static function confirmByMessageId($id, $userId)
+    static public function confirmByMessageId($id, $userId)
     {
         return (bool)(static::getClassMessage())::deleteAll(
             'id = :id AND userId = :userId',
@@ -98,14 +106,6 @@ class MessageHandler
                 ':userId' => $userId,
             ]
         );
-    }
-
-    /**
-     * @return Message
-     */
-    static public function getClassMessage()
-    {
-        return static::$classMessage;
     }
 
     /**
