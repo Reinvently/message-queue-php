@@ -14,12 +14,14 @@ use yii\db\IntegrityException;
 use yii\helpers\Json;
 
 /**
- * @property string $id
- * @property string $userId
- * @property integer $type
- * @property string $createdAt
- * @property string $data
- * @property string $uniqueIdentifier
+ * @property integer id
+ * @property integer subscriberId
+ * @property string channel
+ * @property integer type
+ * @property int createdAt
+ * @property int deleteAfter
+ * @property string data
+ * @property string uniqueIdentifier
  */
 class Message extends ActiveRecord
 {
@@ -34,6 +36,7 @@ class Message extends ActiveRecord
         $response = [
             'id' => $this->id,
             'type' => $this->type,
+            'channel' => $this->channel,
             'data' => Json::decode($this->data),
             'delay' => $this->delay,
         ];
@@ -43,7 +46,7 @@ class Message extends ActiveRecord
 
     /**
      * @param bool $runValidation
-     * @param null $attributeNames
+     * @param null|string[] $attributeNames
      * @return bool
      * @throws IntegrityException
      */
@@ -61,6 +64,9 @@ class Message extends ActiveRecord
         }
     }
 
+    /**
+     * Generating unique identifier
+     */
     public function generateUniqueIdentifier()
     {
         $this->uniqueIdentifier = $this->type . md5($this->data);
@@ -79,13 +85,11 @@ class Message extends ActiveRecord
         $duplicateSqlErrorCode = 1062; /* ER_DUP_ENTRY */
 
         if (isset($e->errorInfo[1]) && $e->errorInfo[1] === $duplicateSqlErrorCode) {
-            $this->deleteAll(
-                'userId = :userId AND uniqueIdentifier = :uniqueIdentifier',
-                [
-                    ':userId' => $this->userId,
-                    ':uniqueIdentifier' => $this->uniqueIdentifier,
-                ]
-            );
+            $this->deleteAll([
+                'subscriberId' => $this->subscriberId,
+                'channel' => $this->channel,
+                'uniqueIdentifier' => $this->uniqueIdentifier,
+            ]);
             try {
                 return parent::save($runValidation, $attributeNames);
             } catch (IntegrityException $e) {
@@ -104,10 +108,10 @@ class Message extends ActiveRecord
     public function rules()
     {
         return [
-            [['createdAt'], 'safe'],
-            [['userId', 'createdAt', 'type'], 'required'],
-            [['userId', 'createdAt', 'type'], 'integer'],
-            [['uniqueIdentifier'], 'string', 'max' => 0xff],
+            [['createdAt', 'deleteAfter'], 'safe'],
+            [['subscriberId', 'createdAt', 'type', 'channel', 'data'], 'required'],
+            [['subscriberId', 'createdAt', 'type'], 'integer'],
+            [['uniqueIdentifier', 'channel'], 'string', 'max' => 0xff],
             [['data'], 'string', 'max' => 0xffff],
         ];
     }
@@ -119,8 +123,10 @@ class Message extends ActiveRecord
     {
         return [
             'id' => 'ID',
-            'userId' => 'User ID',
+            'subscriberId' => 'Subscriber ID',
+            'channel' => 'Channel',
             'createdAt' => 'Created At',
+            'deleteAfter' => 'Delete After',
             'type' => 'Type',
             'data' => 'Data',
         ];

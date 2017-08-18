@@ -17,14 +17,17 @@ class MessageMigration extends Migration
     {
         $this->createTable(Message::tableName(), [
             'id' => $this->primaryKey()->unsigned(),
-            'userId' => $this->integer()->unsigned(),
-            'type' => $this->smallInteger()->unsigned(),
-            'createdAt' => $this->integer()->unsigned(),
-            'data' => $this->text(),
-            'uniqueIdentifier' => $this->string(),
+            'subscriberId' => $this->integer()->unsigned()->notNull(),
+            'channel' => $this->string()->null(),
+            'type' => $this->smallInteger()->unsigned()->notNull(),
+            'createdAt' => $this->integer()->unsigned()->notNull(),
+            'deleteAfter' => $this->integer()->unsigned()->notNull(),
+            'data' => $this->text()->notNull(),
+            'uniqueIdentifier' => $this->string()->notNull(),
         ]);
 
-        $this->createIndex('userIdUniqueIdentifier', Message::tableName(), ['userId', 'uniqueIdentifier'], true);
+        $this->createIndex('userIdChannelUniqueIdentifier', Message::tableName(), ['subscriberId', 'channel', 'uniqueIdentifier'], true);
+        $this->createIndex('deleteAfter', Message::tableName(), ['deleteAfter']);
 
     }
 

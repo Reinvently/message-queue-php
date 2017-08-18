@@ -20,28 +20,32 @@ class MessageHandler
     static protected $classMessage = Message::class;
 
     /**
-     * @param integer[] $userIds
+     * @param integer[] $subscriberIds
+     * @param string $channel
      * @param integer $type
      * @param array|object|null $params
+     * @param integer $deleteAfter
      * @throws IntegrityException
      */
-    static public function addMultiple($userIds, $type, $params = null)
+    static public function addMultiple($subscriberIds, $channel, $type, $params = null, $deleteAfter = 0xffff)
     {
         /** @var Message $message */
         $class = static::getClassMessage();
         $message = new $class();
+        $message->channel = $channel;
         $message->type = $type;
         $message->data = Json::encode($params);
+        $message->deleteAfter = $deleteAfter;
         $message->generateUniqueIdentifier();
 
         $class::deleteAll(
             [
-                'userId' => $userIds,
+                'subscriberId' => $subscriberIds,
                 'hash' => $message->uniqueIdentifier,
             ]
         );
-        foreach ($userIds as $userId) {
-            static::add($userId, $type, $params);
+        foreach ($subscriberIds as $subscriberId) {
+            static::add($subscriberId, $channel, $type, $params);
         }
     }
 
@@ -54,75 +58,84 @@ class MessageHandler
     }
 
     /**
-     * @param $userId
+     * @param $subscriberId
+     * @param string $channel
      * @param $type
      * @param array|object|null $data
+     * @param integer $deleteAfter
      * @return bool
      */
-    static public function add($userId, $type, $data = null)
+    static public function add($subscriberId, $channel, $type, $data = null, $deleteAfter = 0xffff)
     {
-        if (empty($userId) || empty($type)) {
+        if (empty($subscriberId) || empty($type)) {
             return false;
         }
 
         /** @var Message $message */
         $class = static::getClassMessage();
         $message = new $class;
-        $message->userId = $userId;
+        $message->subscriberId = $subscriberId;
+        $message->channel = $channel;
         $message->createdAt = time();
         $message->type = $type;
         $message->data = Json::encode($data);
+        $message->deleteAfter = $deleteAfter;
         $result = $message->save();
 
         return $result;
     }
 
     /**
-     * @param integer $userId
+     * @param integer $subscriberId
      * @param integer $delay
      * @param integer $messageId
      * @return array
      */
-    static public function getApiResponse($userId, $delay, $messageId = 0)
+    static public function getApiResponse($subscriberId, $delay, $messageId = 0)
     {
         if ($messageId) {
-            MessageHandler::confirmByMessageId($messageId, $userId);
+            MessageHandler::confirmByMessageId($messageId, $subscriberId);
         }
 
-        $message = MessageHandler::getMessageByUser($userId, $delay);
+        $message = MessageHandler::getMessageBySubscriber($subscriberId, $delay);
 
         return $message->getItemForApi();
     }
 
     /**
      * @param integer $id
-     * @param integer $userId for secure delete
+     * @param integer $subscriberId for secure delete
      * @return bool
      */
-    static public function confirmByMessageId($id, $userId)
+    static public function confirmByMessageId($id, $subscriberId)
     {
         $class = static::getClassMessage();
         return (bool)$class::deleteAll(
-            'id = :id AND userId = :userId',
             [
-                ':id' => $id,
-                ':userId' => $userId,
+                'id' => $id,
+                'subscriberId' => $subscriberId,
             ]
         );
     }
 
     /**
-     * @param integer $userId
+     * @param integer $subscriberId
      * @param integer $delay
+     * @param string $channel
      * @return message
      */
-    static public function getMessageByUser($userId, $delay)
+    static public function getMessageBySubscriber($subscriberId, $delay, $channel = null)
     {
         /** @var Message $message */
         $class = static::getClassMessage();
         $message = $class::find()
-            ->where('userId = :userId', [':userId' => $userId])
-            ->one();
+            ->where(['subscriberId' => $subscriberId]);
+
+        if ($channel) {
+            $message->andWhere(['like', 'channel', $channel, false]);
+        }
+
+        $message->one();
 
         if (!$message) {
             $message = new $class;
@@ -132,6 +145,48 @@ class MessageHandler
         $message->delay = $delay;
 
         return $message;
+    }
+
+    /**
+     * @param integer $subscriberId
+     * @param string $channel
+     * @return boolean
+     */
+    static public function clearChannelBySubscriber($subscriberId, $channel = null)
+    {
+        /** @var Message $message */
+        $class = static::getClassMessage();
+        if ($channel) {
+            return (bool)$class::deleteAll(
+                'subscriberId = :subscriberId AND channel LIKE :channel',
+                [
+                    ':subscriberId' => $subscriberId,
+                    ':channel' => $channel,
+                ]
+            );
+        } else {
+            return (bool)$class::deleteAll(
+                [
+                    'subscriberId' => $subscriberId,
+                ]
+            );
+        }
+    }
+
+    /**
+     * @param integer $time
+     * @return boolean
+     */
+    static public function clearOutdatedMessages($time)
+    {
+        /** @var Message $message */
+        $class = static::getClassMessage();
+        return (bool)$class::deleteAll(
+            'deleteAfter < :time',
+            [
+                ':time' => $time,
+            ]
+        );
     }
 
 }
