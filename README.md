@@ -100,11 +100,6 @@ Changing migration code:
     Total 1 new migration to be applied:
             m170808_122932_message_queue_migration
     
-    Apply the above migration? (yes|no) [no]:y
-    *** applying m170808_122932_message_queue_migration
-        > create table {{%message}} ... done (time: 0.016s)
-        > create unique index userIdUniqueIdentifier on {{%message}} (userId,uniqueIdentifier) ... done (time: 0.020s)
-    *** applied m170808_122932_message_queue_migration (time: 0.075s)
     
     
     1 migration was applied.
@@ -120,7 +115,7 @@ or
     MessageHandler::addMultiple([123, 124], static::SOME_MESSAGE_TYPE);
     
 
-Api Controller
+Api Controller And Examples
 --------------
 
 Test Controller:
@@ -132,56 +127,171 @@ Test Controller:
     {
         const SOME_MESSAGE_TYPE = 10;
     
-        public function actionAddMessage($userId)
+        public function actionAddMessage($userId, $channel = null)
         {
-            return MessageHandler::add($userId, static::SOME_MESSAGE_TYPE);
+            return MessageHandler::add($userId, $channel,static::SOME_MESSAGE_TYPE);
         }
     
-        public function actionGetNewAndConfirmLastMessage($userId, $confirmMessageId = 0)
+        public function actionGetNewAndConfirmLastMessage($userId, $channel = null, $confirmMessageId = 0)
         {
             $delay = 10;
-            return MessageHandler::getApiResponse($userId, $delay, $confirmMessageId);
+            return MessageHandler::getApiResponse($userId, $delay, $channel, $confirmMessageId);
+        }
+    
+        public function actionClearChannelBySubscriber($userId, $channel = null)
+        {
+            return MessageHandler::clearChannelBySubscriber($userId, $channel);
+        }
+    
+        public function actionClearOutdatedMessages()
+        {
+            return MessageHandler::clearOutdatedMessages(time());
         }
     
     }
     
-Request 1 
+**Adding messages**
+    
+Request: 
 
-Adding message to user #123:
-
-    /test/add-message?userId=123
+    /api/test/add-message?userId=123
 Response:
  
     true
 
-Request 2 
+Request:
 
-Checking new message of user #123:
-
-    /api/test/get-new-and-confirm-last-Message?userId=123
+    /api/test/add-message?userId=123&channel=aa
 Response:
+ 
+    true
 
+Request:
+
+    /api/test/add-message?userId=123&channel=ab
+Response:
+ 
+    true
+
+Request:
+
+    /api/test/add-message?userId=123&channel=ab
+Response:
+ 
+    true
+    
+**Getting and confirming messages**
+
+Request:
+
+    /api/test/get-new-and-confirm-last-message?userId=123&channel=a%
+Response:
+ 
     {
-      "id": "234",
+      "id": "5",
       "type": 10,
+      "channel": "aa",
       "data": null,
       "delay": 10
     }
 
-Request 3 
+Request:
 
-Confirming message #234 and checking new message of user #123:
-
-    /api/test/get-new-and-confirm-last-Message?userId=123&confirmMessageId=234
+    /api/test/get-new-and-confirm-last-message?userId=123&channel=a%&confirmMessageId=5
 Response:
+ 
+    {
+      "id": "6",
+      "type": 10,
+      "channel": "ab",
+      "data": null,
+      "delay": 10
+    }
 
+Request:
+
+    /api/test/get-new-and-confirm-last-message?userId=123&channel=a%&confirmMessageId=6
+Response:
+ 
     {
       "id": null,
       "type": 0,
+      "channel": null,
       "data": null,
       "delay": 10
     }
 
+Request:
+
+    /api/test/get-new-and-confirm-last-message?userId=123
+Response:
+ 
+    {
+      "id": "7",
+      "type": 10,
+      "channel": null,
+      "data": null,
+      "delay": 10
+    }
+
+Request:
+
+    /api/test/get-new-and-confirm-last-message?userId=123&confirmMessageId=7
+Response:
+ 
+    {
+      "id": null,
+      "type": 0,
+      "channel": null,
+      "data": null,
+      "delay": 10
+    }
+
+**Clear channel by subscriber**
+
+Request:
+
+    /api/test/add-message?userId=123
+Response:
+ 
+    true
+
+Request:
+
+    /api/test/add-message?userId=123&channel=aa
+Response:
+ 
+    true
+
+Request:
+
+    /api/test/add-message?userId=123&channel=b
+Response:
+ 
+    true
+
+Request:
+
+    /api/test/clear-channel-by-subscriber?userId=123&channel=a%
+Response:
+ 
+    true
+
+Request:
+
+    /api/test/clear-channel-by-subscriber?userId=123
+Response:
+ 
+    true
+        
+**Clear outdated messages**
+
+Request:
+
+    /api/test/clear-outdated-messages
+Response:
+ 
+    true
 
 
 
