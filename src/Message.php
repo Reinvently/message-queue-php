@@ -109,10 +109,11 @@ class Message extends ActiveRecord
     {
         return [
             [['createdAt', 'deleteAfter'], 'safe'],
-            [['subscriberId', 'createdAt', 'type', 'channel', 'data'], 'required'],
+            [['subscriberId', 'createdAt', 'type', 'data'], 'required'],
             [['subscriberId', 'createdAt', 'type'], 'integer'],
             [['uniqueIdentifier', 'channel'], 'string', 'max' => 0xff],
             [['data'], 'string', 'max' => 0xffff],
+            [['channel'], 'default', 'value' => ''],
         ];
     }
 

@@ -27,7 +27,7 @@ class MessageHandler
      * @param integer $deleteAfter
      * @throws IntegrityException
      */
-    static public function addMultiple($subscriberIds, $channel, $type, $params = null, $deleteAfter = 0xffff)
+    static public function addMultiple($subscriberIds, $channel, $type, $params = null, $deleteAfter = 0xffffffff)
     {
         /** @var Message $message */
         $class = static::getClassMessage();
@@ -65,7 +65,7 @@ class MessageHandler
      * @param integer $deleteAfter
      * @return bool
      */
-    static public function add($subscriberId, $channel, $type, $data = null, $deleteAfter = 0xffff)
+    static public function add($subscriberId, $channel, $type, $data = null, $deleteAfter = 0xffffffff)
     {
         if (empty($subscriberId) || empty($type)) {
             return false;
@@ -88,16 +88,17 @@ class MessageHandler
     /**
      * @param integer $subscriberId
      * @param integer $delay
+     * @param string $channel
      * @param integer $messageId
      * @return array
      */
-    static public function getApiResponse($subscriberId, $delay, $messageId = 0)
+    static public function getApiResponse($subscriberId, $delay, $channel = null, $messageId = 0)
     {
         if ($messageId) {
             MessageHandler::confirmByMessageId($messageId, $subscriberId);
         }
 
-        $message = MessageHandler::getMessageBySubscriber($subscriberId, $delay);
+        $message = MessageHandler::getMessageBySubscriber($subscriberId, $delay, $channel);
 
         return $message->getItemForApi();
     }
@@ -128,14 +129,14 @@ class MessageHandler
     {
         /** @var Message $message */
         $class = static::getClassMessage();
-        $message = $class::find()
+        $messageQuery = $class::find()
             ->where(['subscriberId' => $subscriberId]);
 
         if ($channel) {
-            $message->andWhere(['like', 'channel', $channel, false]);
+            $messageQuery->andWhere(['like', 'channel', $channel, false]);
         }
 
-        $message->one();
+        $message = $messageQuery->one();
 
         if (!$message) {
             $message = new $class;

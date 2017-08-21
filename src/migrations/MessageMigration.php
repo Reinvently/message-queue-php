@@ -18,7 +18,7 @@ class MessageMigration extends Migration
         $this->createTable(Message::tableName(), [
             'id' => $this->primaryKey()->unsigned(),
             'subscriberId' => $this->integer()->unsigned()->notNull(),
-            'channel' => $this->string()->null(),
+            'channel' => $this->string()->notNull(),
             'type' => $this->smallInteger()->unsigned()->notNull(),
             'createdAt' => $this->integer()->unsigned()->notNull(),
             'deleteAfter' => $this->integer()->unsigned()->notNull(),
